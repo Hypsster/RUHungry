@@ -179,10 +179,33 @@ public class RUHungry {
      * @param ingredientName - name of the ingredient
      */
 
-    public void deleteStockNode ( String ingredientName ) {
-
-        // WRITE YOUR CODE HERE
+    public void deleteStockNode(String ingredientName) {
+        boolean found = false;
+        for (int i = 0; i < stockVar.length; i++) {
+            StockNode previous = null;
+            StockNode current = stockVar[i];
+            while (current != null) {
+                if (current.getIngredient().getName().equals(ingredientName)) {
+                    found = true;
+                    if (previous == null) {
+                        // Node to delete is the head of the list
+                        stockVar[i] = current.getNextStockNode();
+                    } else {
+                        // Node to delete is not the head
+                        previous.setNextStockNode(current.getNextStockNode());
+                    }
+                    break;
+                }
+                previous = current;
+                current = current.getNextStockNode();
+            }
+            if (found) break;
+        }
+        if (!found) {
+            System.out.println("Ingredient not found in stock.");
+        }
     }
+
 
     /**
      * This method finds an ingredient from StockVar (given the ingredientID)
@@ -195,12 +218,18 @@ public class RUHungry {
      * @return the StockNode corresponding to the ingredientID, null otherwise
      */
 
-    public StockNode findStockNode (int ingredientID) {
-
-        // WRITE YOUR CODE HERE
-
-        return null; // update the return value
+    public StockNode findStockNode(int ingredientID) {
+        int index = ingredientID % stockVar.length;
+        StockNode current = stockVar[index];
+        while (current != null) {
+            if (current.getIngredient().getID() == ingredientID) {
+                return current;
+            }
+            current = current.getNextStockNode();
+        }
+        return null;
     }
+
 
     /**
      * This method is to find an ingredient from StockVar (given the ingredient name).
@@ -247,9 +276,28 @@ public class RUHungry {
      * @param stockAmountToAdd - the amount to add to the current stock amount
      */
 
-    public void updateStock (String ingredientName, int ingredientID, int stockAmountToAdd) {
-
-        // WRITE YOUR CODE HERE
+    public void updateStock(String ingredientName, int ingredientID, int stockAmountToAdd) {
+        StockNode nodeToUpdate = null;
+        if (ingredientName == null && ingredientID != -1) {
+            nodeToUpdate = findStockNode(ingredientID);
+        } else if (ingredientID == -1 && ingredientName != null) {
+            for (int i = 0; i < stockVar.length; i++) {
+                StockNode current = stockVar[i];
+                while (current != null) {
+                    if (current.getIngredient().getName().equals(ingredientName)) {
+                        nodeToUpdate = current;
+                        break;
+                    }
+                    current = current.getNextStockNode();
+                }
+                if (nodeToUpdate != null) break;
+            }
+        }
+        if (nodeToUpdate != null) {
+            nodeToUpdate.getIngredient().updateStockLevel(stockAmountToAdd);
+        } else {
+            System.out.println("Ingredient not found.");
+        }
     }
 
     /**
@@ -271,8 +319,25 @@ public class RUHungry {
      */
 
     public void updatePriceAndProfit() {
+        // Assuming menuVar is an array of MenuNode
+        for (int i = 0; i < menuVar.length; i++) {
+            MenuNode currentNode = menuVar[i];
+            while (currentNode != null) {
+                Dish dish = currentNode.getDish();
+                double dishCost = 0.0;
+                for (int ingredientID : dish.getStockID()) {
+                    StockNode ingredientNode = findStockNode(ingredientID);
+                    if (ingredientNode != null) {
+                        dishCost += ingredientNode.getIngredient().getCost();
+                    }
+                }
+                double dishPrice = dishCost * 1.2;
+                dish.setPriceOfDish(dishPrice);
+                dish.setProfit(dishPrice - dishCost);
 
-        // WRITE YOUR CODE HERE
+                currentNode = currentNode.getNextMenuNode();
+            }
+        }
     }
 
     /**
@@ -302,12 +367,38 @@ public class RUHungry {
      * @param inputFile - the input file with the ingredients and all their information (stock.in)
      */
 
-    public void createStockHashTable (String inputFile){
-
+    public void createStockHashTable(String inputFile) {
         StdIn.setFile(inputFile);
 
-        // WRITE YOUR CODE HERE
+        // Read the size of stockVar and update stockVarSize
+        int stockVarSize = StdIn.readInt();
+        stockVar = new StockNode[stockVarSize]; // Initialize the stockVar hashtable
+
+        while (!StdIn.isEmpty()) {
+            // Read ingredient details
+            int ingredientID = StdIn.readInt();
+            StdIn.readChar(); // To remove the space between ID and name
+            String ingredientName = StdIn.readLine();
+            double cost = StdIn.readDouble();
+            int stockAmount = StdIn.readInt();
+
+            // Create Ingredient and StockNode objects
+            Ingredient ingredient = new Ingredient(ingredientID, ingredientName, stockAmount, cost);
+            StockNode node = new StockNode(ingredient, null);
+
+            // Add node to stockVar hashtable
+            addNode(node);
+        }
     }
+
+    private void addNode(StockNode node) {
+        int index = node.getIngredient().getID() % stockVar.length;
+        node.setNextStockNode(stockVar[index]);
+        stockVar[index] = node;
+    }
+
+
+
 
     /*
      * Transaction methods
@@ -323,9 +414,20 @@ public class RUHungry {
      * @param data - TransactionData node to be added to transactionVar
      */
 
-    public void addTransactionNode ( TransactionData data ) { // method adds new transactionNode to the end of LL
+    public void addTransactionNode(TransactionData data) {
+        TransactionNode newNode = new TransactionNode(data, null);
 
-        // WRITE YOUR CODE HERE
+        if (transactionVar == null) {
+            // If the list is empty, the new node becomes the head
+            transactionVar = newNode;
+        } else {
+            // Otherwise, find the last node and add the new node after it
+            TransactionNode current = transactionVar;
+            while (current.getNext() != null) {
+                current = current.getNext();
+            }
+            current.setNext(newNode);
+        }
     }
 
     /**
@@ -347,13 +449,21 @@ public class RUHungry {
      * @return boolean
      */
 
-    public boolean checkDishAvailability ( String dishName, int numberOfDishes ){
-
-        // WRITE YOUR CODE HERE
-
-        return true; // update the return value
+    public boolean checkDishAvailability(String dishName, int numberOfDishes) {
+        MenuNode menuNode = findDish(dishName);
+        if (menuNode == null) {
+            return false;
+        }
+        Dish dish = menuNode.getDish();
+        int[] ingredientIDs = dish.getStockID();
+        for (int ingredientID : ingredientIDs) {
+            StockNode stockNode = findStockNode(ingredientID);
+            if (stockNode == null || stockNode.getIngredient().getStockLevel() < numberOfDishes) {
+                return false;
+            }
+        }
+        return true;
     }
-
     /**
      * PICK UP LINE OF THE METHOD:
      * *if you were a while loop and I were a boolean, we could run 
@@ -379,11 +489,76 @@ public class RUHungry {
      * @param dishName - String of dish that's been ordered
      * @param quantity - int of how many of that dish has been ordered
      */
+    public void order(String dishName, int quantity) {
+        MenuNode dishNode = findDish(dishName);
+        boolean isOrderSuccessful = checkDishAvailability(dishName, quantity);
 
-    public void order ( String dishName, int quantity ){
+        if (isOrderSuccessful) {
+            // Dish can be prepared
+            processOrder(dishNode.getDish(), quantity, true);
+        } else {
+            // Dish cannot be prepared, add unsuccessful transaction for this dish
+            processOrder(dishNode.getDish(), quantity, false);
 
-        // WRITE YOUR CODE HERE
+            // Try finding an alternative dish in the same category
+            MenuNode categoryStartNode = findCategoryStartNode(dishName);
+            if (categoryStartNode != null) {
+                // Start from the next node after the current dish
+                MenuNode current = categoryStartNode;
+                boolean foundAlternative = false;
+                do {
+                    current = current.getNextMenuNode();
+                    if (current == null) {
+                        // If reached the end, loop back to the start of the category
+                        current = categoryStartNode;
+                    }
+
+                    if (current.getDish().getDishName().equals(dishName)) {
+                        // If we have looped through all dishes, break the loop
+                        break;
+                    }
+
+                    if (checkDishAvailability(current.getDish().getDishName(), quantity)) {
+                        // Found an alternative dish that can be prepared
+                        processOrder(current.getDish(), quantity, true);
+                        foundAlternative = true;
+                        break;
+                    }
+
+                } while (!foundAlternative);
+            }
+        }
     }
+
+    private void processOrder(Dish dish, int quantity, boolean isSuccess) {
+        double profit = isSuccess ? dish.getProfit() * quantity : 0;
+        if (isSuccess) {
+            // Update stock for each ingredient
+            for (int ingredientID : dish.getStockID()) {
+                updateStock(null, ingredientID, -quantity);
+            }
+        }
+        // Create and add transaction data
+        TransactionData transaction = new TransactionData("order", dish.getDishName(), quantity, profit, isSuccess);
+        addTransactionNode(transaction);
+    }
+
+    private MenuNode findCategoryStartNode(String dishName) {
+        // Use findDish to get the dish's category
+        MenuNode dishNode = findDish(dishName);
+        if (dishNode == null) {
+            // Dish not found
+            return null;
+        }
+
+        String category = dishNode.getDish().getCategory();
+        // Use findCategoryIndex to find the index of this category
+        int categoryIndex = findCategoryIndex(category);
+
+        // Return the start node of this category from menuVar
+        return menuVar[categoryIndex];
+    }
+
 
     /**
      * This method returns the total profit for the day
@@ -394,12 +569,21 @@ public class RUHungry {
      * @return profit - double value of the total profit for the day
      */
 
-    public double profit () {
+    public double profit() {
+        double totalProfit = 0.0;
+        TransactionNode current = transactionVar;
 
-        // WRITE YOUR CODE HERE
+        while (current != null) {
+            TransactionData data = current.getData();
+            if (data != null && data.getSuccess()) { // Only count profits from successful transactions
+                totalProfit += data.getProfit();
+            }
+            current = current.getNext();
+        }
 
-        return 0.0; // update the return value
+        return totalProfit;
     }
+
 
     /**
      * This method simulates donation requests, successful or not.
