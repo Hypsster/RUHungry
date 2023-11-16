@@ -2,13 +2,13 @@ package restaurant;
 
 /**
  * This file is the data portion of the TransactionNode.
- * 
+ *
  * @author Mary Buist
  * @author Kushi Sharma
-*/
+ */
 
 public class TransactionData {
-    
+
     private String  type;    // one of three: order, donation, restock
     private String  item;    // either food order or ingredient donation request/ restock
     private int     amount;  // integer amount of food being purchased/donated/restocked
@@ -23,7 +23,7 @@ public class TransactionData {
         profit = 0;
         success = false;
     }
-    
+
     // Constructor
     public TransactionData (String type, String item, int amount, double profit, boolean success){
         this.type = type;
