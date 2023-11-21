@@ -5,7 +5,7 @@ package restaurant;
  * To write to a file use StdOut.setFile(outputfilename)
  *
  * Compiling and executing:
- * 1. use the run or debug function to run the driver and test your methods 
+ * 1. use the run or debug function to run the driver and test your methods
  *
  * @author Mary Buist
  * @author Kushi Sharma
@@ -227,7 +227,7 @@ public class Driver{
         }
     }
 
-    // the methods to test transaction methods create a simple TransactionNode and adds it to the transaction LL 
+    // the methods to test transaction methods create a simple TransactionNode and adds it to the transaction LL
     // so that you will be able to run these methods
 
     public static void testIndividualMethods(String inputOrdersFile, String transactionType, RUHungry restaurant){
